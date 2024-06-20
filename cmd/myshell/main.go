@@ -21,13 +21,15 @@ func main() {
 		command, args := commands[0], commands[1:]
 		_ = args
 		switch command {
-		case "ciao":
-			fmt.Printf("bau\n")
+		case "echo":
+			fmt.Print(strings.Join(args, " "))
 		case "exit":
 			os.Exit(0)
 		default:
-			fmt.Printf("%s: command not found\n", command)
+			fmt.Printf("%s: command not found", command)
 		}
+
+		fmt.Print("\n")
 	}
 
 }
