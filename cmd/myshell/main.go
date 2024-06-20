@@ -16,10 +16,15 @@ func main() {
 		if err != nil {
 			slog.Info("Error during reading command", err)
 		}
-		command, _ = strings.CutSuffix(command, "\n")
+		input, _ := strings.CutSuffix(command, "\n")
+		commands := strings.Fields(input)
+		command, args := commands[0], commands[1:]
+		_ = args
 		switch command {
 		case "ciao":
 			fmt.Printf("bau\n")
+		case "exit":
+			os.Exit(0)
 		default:
 			fmt.Printf("%s: command not found\n", command)
 		}
