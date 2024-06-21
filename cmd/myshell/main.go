@@ -2,34 +2,82 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"strings"
 )
 
+var Commands map[string]Command
+
+func init() {
+	Commands = make(map[string]Command, 10)
+	Commands["echo"] = Command{
+		Command: "echo",
+		F: func(args []string) error {
+			fmt.Println(strings.Join(args, " "))
+			return nil
+		},
+	}
+	Commands["exit"] = Command{
+		Command: "exit",
+		F: func(args []string) error {
+			os.Exit(0)
+			return nil
+		},
+	}
+	Commands["type"] = Command{
+		Command: "type",
+		Man: `type: missing arguments
+usage: type <command>`,
+		F: func(args []string) error {
+			if len(args) != 1 {
+				return &WrongArgumentsError{msg: "wrong arguments"}
+			}
+			c, ok := Commands[args[0]]
+			if !ok {
+				fmt.Printf("%s: not found\n", args[0])
+				return nil
+			}
+			fmt.Printf("%s is a shell builtin\n", c.Command)
+			return nil
+		},
+	}
+}
+
 func main() {
 	// Uncomment this block to pass the first stage
 	for {
 		fmt.Fprint(os.Stdout, "$ ")
-		command, err := bufio.NewReader(os.Stdin).ReadString('\n')
+		inputReader, err := bufio.NewReader(os.Stdin).ReadString('\n')
 		if err != nil {
-			slog.Info("Error during reading command", err)
+			slog.Error("Error during reading command", err)
 		}
-		input, _ := strings.CutSuffix(command, "\n")
-		commands := strings.Fields(input)
-		command, args := commands[0], commands[1:]
-		_ = args
-		switch command {
-		case "echo":
-			fmt.Print(strings.Join(args, " "))
-		case "exit":
-			os.Exit(0)
-		default:
-			fmt.Printf("%s: command not found", command)
+		input, _ := strings.CutSuffix(inputReader, "\n")
+		fields := strings.Fields(input)
+		var command string
+		var args []string
+		if len(fields) > 0 {
+			command = fields[0]
 		}
-
-		fmt.Print("\n")
+		if len(fields) > 1 {
+			args = fields[1:]
+		}
+		c, ok := Commands[command]
+		if !ok {
+			fmt.Printf("%s: command not found\n", command)
+			continue
+		}
+		err = c.F(args)
+		if err != nil {
+			var wrongargError *WrongArgumentsError
+			if errors.As(err, &wrongargError) {
+				fmt.Println(c.Man)
+			} else {
+				fmt.Println(err)
+			}
+		}
 	}
 
 }
