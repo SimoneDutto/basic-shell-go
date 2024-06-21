@@ -1,5 +1,10 @@
 package main
 
+import (
+	"fmt"
+	"os/exec"
+)
+
 type CommandType string
 
 const (
@@ -27,6 +32,12 @@ func CreateSystemCommand(command string, path string) Command {
 		Command: command,
 		Path:    path,
 		F: func(args []string) error {
+			cmd := exec.Command(path, args...)
+			out, err := cmd.CombinedOutput()
+			if err != nil {
+				return err
+			}
+			fmt.Print(string(out))
 			return nil
 		},
 	}
