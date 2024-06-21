@@ -40,6 +40,9 @@ func init() {
 				return &WrongArgumentsError{msg: "wrong arguments"}
 			}
 			cdPath := args[0]
+			if strings.HasPrefix(cdPath, "~") {
+				cdPath = strings.Replace(cdPath, "~", pwd.home, -1)
+			}
 			if !strings.HasPrefix(cdPath, "/") {
 				cdPath = path.Join(pwd.pwd, cdPath)
 			}

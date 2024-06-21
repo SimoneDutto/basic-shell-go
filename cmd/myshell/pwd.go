@@ -16,19 +16,9 @@ func CreatePwd() Pwd {
 		fmt.Println("Cannot get pwd")
 		os.Exit(1)
 	}
+	home := os.Getenv("HOME")
 	return Pwd{
-		home: pwd,
+		home: home,
 		pwd:  pwd,
 	}
-}
-
-func exists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	}
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	return false, err
 }
