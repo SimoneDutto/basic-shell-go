@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path"
 	"strings"
 )
 
@@ -14,6 +15,7 @@ var Commands map[string]Command
 func init() {
 	Commands = make(map[string]Command, 10)
 	Commands["echo"] = Command{
+		Type:    INTERNAL,
 		Command: "echo",
 		F: func(args []string) error {
 			fmt.Println(strings.Join(args, " "))
@@ -21,6 +23,7 @@ func init() {
 		},
 	}
 	Commands["exit"] = Command{
+		Type:    INTERNAL,
 		Command: "exit",
 		F: func(args []string) error {
 			os.Exit(0)
@@ -28,6 +31,7 @@ func init() {
 		},
 	}
 	Commands["type"] = Command{
+		Type:    INTERNAL,
 		Command: "type",
 		Man: `type: missing arguments
 usage: type <command>`,
@@ -35,19 +39,42 @@ usage: type <command>`,
 			if len(args) != 1 {
 				return &WrongArgumentsError{msg: "wrong arguments"}
 			}
-			c, ok := Commands[args[0]]
+			c, ok := getCommand(args[0])
 			if !ok {
 				fmt.Printf("%s: not found\n", args[0])
 				return nil
 			}
-			fmt.Printf("%s is a shell builtin\n", c.Command)
+			if c.Type == SYSTEM {
+				fmt.Printf("%s is %s\n", c.Command, c.Path)
+			} else if c.Type == INTERNAL {
+				fmt.Printf("%s is a shell builtin\n", c.Command)
+			}
 			return nil
 		},
 	}
 }
 
+func getCommand(command string) (Command, bool) {
+	c, ok := Commands[command]
+	if ok {
+		return c, ok
+	}
+	paths := os.Getenv("PATH")
+	if paths == "" {
+		return Command{}, false
+	}
+	for _, p := range strings.Split(paths, ":") {
+		commandPath := path.Join(p, command)
+		_, err := os.Open(commandPath)
+		if err != nil {
+			continue
+		}
+		return CreateSystemCommand(command, commandPath), true
+	}
+	return Command{}, false
+}
+
 func main() {
-	// Uncomment this block to pass the first stage
 	for {
 		fmt.Fprint(os.Stdout, "$ ")
 		inputReader, err := bufio.NewReader(os.Stdin).ReadString('\n')
@@ -64,7 +91,7 @@ func main() {
 		if len(fields) > 1 {
 			args = fields[1:]
 		}
-		c, ok := Commands[command]
+		c, ok := getCommand(command)
 		if !ok {
 			fmt.Printf("%s: command not found\n", command)
 			continue
