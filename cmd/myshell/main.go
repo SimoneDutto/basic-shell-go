@@ -30,6 +30,18 @@ func init() {
 			return nil
 		},
 	}
+	Commands["pwd"] = Command{
+		Type:    INTERNAL,
+		Command: "pwd",
+		F: func(args []string) error {
+			pwd, err := os.Getwd()
+			if err != nil {
+				return err
+			}
+			fmt.Println(pwd)
+			return nil
+		},
+	}
 	Commands["type"] = Command{
 		Type:    INTERNAL,
 		Command: "type",
