@@ -11,8 +11,10 @@ import (
 )
 
 var Commands map[string]Command
+var pwd Pwd
 
 func init() {
+	pwd = CreatePwd()
 	Commands = make(map[string]Command, 10)
 	Commands["echo"] = Command{
 		Type:    INTERNAL,
@@ -30,15 +32,30 @@ func init() {
 			return nil
 		},
 	}
+	Commands["cd"] = Command{
+		Type:    INTERNAL,
+		Command: "cd",
+		F: func(args []string) error {
+			if len(args) != 1 {
+				return &WrongArgumentsError{msg: "wrong arguments"}
+			}
+			cdPath := args[0]
+			if !strings.HasPrefix(cdPath, "/") {
+				cdPath = path.Join(pwd.pwd, cdPath)
+			}
+			s, err := os.Stat(cdPath)
+			if err != nil || !s.IsDir() {
+				fmt.Printf("cd: %s: No such file or directory", cdPath)
+			}
+			pwd.pwd = cdPath
+			return nil
+		},
+	}
 	Commands["pwd"] = Command{
 		Type:    INTERNAL,
 		Command: "pwd",
 		F: func(args []string) error {
-			pwd, err := os.Getwd()
-			if err != nil {
-				return err
-			}
-			fmt.Println(pwd)
+			fmt.Println(pwd.pwd)
 			return nil
 		},
 	}
@@ -77,7 +94,7 @@ func getCommand(command string) (Command, bool) {
 	}
 	for _, p := range strings.Split(paths, ":") {
 		commandPath := path.Join(p, command)
-		_, err := os.Open(commandPath)
+		_, err := os.Stat(commandPath)
 		if err != nil {
 			continue
 		}
