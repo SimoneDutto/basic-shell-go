@@ -45,7 +45,7 @@ func init() {
 			}
 			s, err := os.Stat(cdPath)
 			if err != nil || !s.IsDir() {
-				fmt.Printf("cd: %s: No such file or directory", cdPath)
+				fmt.Printf("cd: %s: No such file or directory\n", cdPath)
 			}
 			pwd.pwd = cdPath
 			return nil
